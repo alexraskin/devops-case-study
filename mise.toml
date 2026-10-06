@@ -1,0 +1,10 @@
+[tools]
+sops = "3.13.3"
+age = "latest"
+jq = "latest"
+kubectl = "latest"
+helm = "latest"
+k9s = "latest"
+flux2 = "latest"
+kustomize = "latest"
+k3d = "latest"
