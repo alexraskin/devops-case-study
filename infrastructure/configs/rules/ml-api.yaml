@@ -1,0 +1,61 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: ml-api-alerts
+  namespace: monitoring
+spec:
+  groups:
+    - name: ml-api
+      interval: 1m
+      rules:
+        - alert: MlApiErrorRatioHigh
+          expr: |
+            sum(rate(ml_api_requests_total{status=~"5.."}[5m]))
+              / sum(rate(ml_api_requests_total[5m]))
+            > 0.05
+          for: 5m
+          labels:
+            severity: warning
+            service: ml-api
+          annotations:
+            summary: "ml-api: high 5xx error ratio"
+            description: "{{ $value | humanizePercentage }} of requests are returning 5xx (threshold 5%)."
+
+        # Healthy /predict p95 is ~0.25-0.5s.
+        - alert: MlApiLatencyHigh
+          expr: |
+            histogram_quantile(0.95,
+              sum by (le) (rate(ml_api_request_duration_seconds_bucket[5m]))
+            ) > 1
+          for: 5m
+          labels:
+            severity: warning
+            service: ml-api
+          annotations:
+            summary: "ml-api: p95 latency above 1s"
+            description: "p95 latency is {{ $value | humanizeDuration }}."
+
+        - alert: MlApiTrafficDrop
+          expr: |
+            sum(rate(ml_api_requests_total[5m]))
+              < 0.5 * sum(rate(ml_api_requests_total[5m] offset 5m))
+          for: 2m
+          labels:
+            severity: critical
+            service: ml-api
+          annotations:
+            summary: "ml-api: request rate more than halved"
+            description: "Now {{ $value | printf \"%.2f\" }} req/s, under half of 5 minutes ago. Check the load-generator, DNS or networking."
+
+        # /predict is being called but no predictions are counted: the model is failing silently.
+        - alert: MlApiPredictionsStalled
+          expr: |
+            sum(rate(ml_api_predictions_total[10m])) == 0
+              and sum(rate(ml_api_requests_total{endpoint="/predict"}[10m])) > 0
+          for: 5m
+          labels:
+            severity: critical
+            service: ml-api
+          annotations:
+            summary: "ml-api: /predict receives traffic but no predictions are made"
+            description: "Requests are reaching /predict but ml_api_predictions_total has not increased in 10 minutes."

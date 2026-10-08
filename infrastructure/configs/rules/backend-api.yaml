@@ -1,0 +1,63 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: backend-api-alerts
+  namespace: monitoring
+spec:
+  groups:
+    - name: backend-api
+      interval: 1m
+      rules:
+        # /process is already 100% 500s (missing `documents` table)
+        - alert: BackendApiErrorRatioHigh
+          expr: |
+            sum(rate(backend_api_requests_total{status=~"5.."}[5m]))
+              / sum(rate(backend_api_requests_total[5m]))
+            > 0.05
+          for: 5m
+          labels:
+            severity: warning
+            service: backend-api
+          annotations:
+            summary: "backend-api: high 5xx error ratio"
+            description: "{{ $value | humanizePercentage }} of requests are returning 5xx (threshold 5%)."
+
+        # Healthy /process p95 is ~10ms; 1s means Postgres or the pod is struggling.
+        - alert: BackendApiLatencyHigh
+          expr: |
+            histogram_quantile(0.95,
+              sum by (le) (rate(backend_api_request_duration_seconds_bucket[5m]))
+            ) > 1
+          for: 5m
+          labels:
+            severity: warning
+            service: backend-api
+          annotations:
+            summary: "backend-api: p95 latency above 1s"
+            description: "p95 latency is {{ $value | humanizeDuration }}."
+
+        # Compared rather than divided so $value is the current req/s.
+        - alert: BackendApiTrafficDrop
+          expr: |
+            sum(rate(backend_api_requests_total[5m]))
+              < 0.5 * sum(rate(backend_api_requests_total[5m] offset 5m))
+          for: 2m
+          labels:
+            severity: critical
+            service: backend-api
+          annotations:
+            summary: "backend-api: request rate more than halved"
+            description: "Now {{ $value | printf \"%.2f\" }} req/s, under half of 5 minutes ago. Check the load-generator, DNS or networking."
+
+        - alert: BackendApiDBErrors
+          expr: |
+            sum(rate(backend_api_db_queries_total{status="error"}[5m]))
+              / sum(rate(backend_api_db_queries_total[5m]))
+            > 0.10
+          for: 5m
+          labels:
+            severity: critical
+            service: backend-api
+          annotations:
+            summary: "backend-api: database queries failing"
+            description: "{{ $value | humanizePercentage }} of db queries are failing (threshold 10%)."
