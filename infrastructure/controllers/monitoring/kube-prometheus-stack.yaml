@@ -1,0 +1,157 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: kube-prometheus-stack
+  namespace: monitoring
+spec:
+  interval: 30m
+  # The chart renders ~120 objects and the CRDs must settle before the operator
+  # starts; the 5m default times out on a cold install.
+  timeout: 15m
+  chart:
+    spec:
+      chart: kube-prometheus-stack
+      version: "91.9.0"
+      sourceRef:
+        kind: HelmRepository
+        name: prometheus-community
+        namespace: flux-system
+      interval: 1h
+  install:
+    crds: Create
+    remediation:
+      retries: 3
+  upgrade:
+    # CRDs ship in the chart's native crds/ directory, which Helm installs but
+    # never upgrades. Without CreateReplace a chart bump leaves stale CRD
+    # schemas behind and new fields silently fail to apply.
+    crds: CreateReplace
+    remediation:
+      retries: 3
+  values:
+    ##
+    ## Prometheus
+    ##
+    prometheus:
+      prometheusSpec:
+        retention: 48h
+
+        serviceMonitorSelectorNilUsesHelmValues: false
+        podMonitorSelectorNilUsesHelmValues: false
+        ruleSelectorNilUsesHelmValues: false
+        probeSelectorNilUsesHelmValues: false
+        scrapeConfigSelectorNilUsesHelmValues: false
+        storageSpec:
+          volumeClaimTemplate:
+            spec:
+              storageClassName: local-path
+              accessModes: ["ReadWriteOnce"]
+              resources:
+                requests:
+                  storage: 10Gi
+
+        resources:
+          requests:
+            cpu: 200m
+            memory: 1Gi
+          limits:
+            cpu: "1"
+            memory: 2Gi
+    kubeEtcd:
+      enabled: false
+    kubeScheduler:
+      enabled: false
+    kubeControllerManager:
+      enabled: false
+    kubeProxy:
+      enabled: false
+
+    defaultRules:
+      rules:
+        etcd: false
+        kubeControllerManager: false
+        kubeProxy: false
+        kubeSchedulerAlerting: false
+        kubeSchedulerRecording: false
+
+    grafana:
+      enabled: true
+      # Plain value so the stack comes up from a clean clone. In production
+      # this belongs in a sops-encrypted Secret decrypted by Flux
+      adminPassword: admin
+      persistence:
+        enabled: true
+        type: pvc
+        storageClassName: local-path
+        accessModes: ["ReadWriteOnce"]
+        size: 5Gi
+      serviceMonitor:
+        enabled: true
+      resources:
+        requests:
+          cpu: 50m
+          memory: 128Mi
+        limits:
+          cpu: 300m
+          memory: 512Mi
+    alertmanager:
+      enabled: true
+      config:
+        global:
+          resolve_timeout: 5m
+        route:
+          group_by: ["alertname", "namespace"]
+          group_wait: 30s
+          group_interval: 5m
+          repeat_interval: 12h
+          receiver: "null"
+          routes:
+            - matchers:
+                - alertname = "Watchdog"
+              receiver: "null"
+        receivers:
+          - name: "null"
+        inhibit_rules:
+          - source_matchers:
+              - severity = critical
+            target_matchers:
+              - severity =~ warning|info
+            equal: ["namespace", "alertname"]
+          - source_matchers:
+              - severity = warning
+            target_matchers:
+              - severity = info
+            equal: ["namespace", "alertname"]
+          - source_matchers:
+              - alertname = InfoInhibitor
+            target_matchers:
+              - severity = info
+            equal: ["namespace"]
+          - target_matchers:
+              - alertname = InfoInhibitor
+      alertmanagerSpec:
+        storage:
+          volumeClaimTemplate:
+            spec:
+              storageClassName: local-path
+              accessModes: ["ReadWriteOnce"]
+              resources:
+                requests:
+                  storage: 2Gi
+        resources:
+          requests:
+            cpu: 25m
+            memory: 64Mi
+          limits:
+            cpu: 200m
+            memory: 256Mi
+
+    prometheusOperator:
+      resources:
+        requests:
+          cpu: 50m
+          memory: 128Mi
+        limits:
+          cpu: 200m
+          memory: 256Mi
