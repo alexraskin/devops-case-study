@@ -1,0 +1,19 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: ml-api
+  namespace: ml-api
+  labels:
+    app: ml-api
+spec:
+  selector:
+    matchLabels:
+      app: ml-api
+  namespaceSelector:
+    matchNames:
+      - ml-api
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 15s
+      scrapeTimeout: 10s
