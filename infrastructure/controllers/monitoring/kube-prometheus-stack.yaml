@@ -90,11 +90,11 @@ spec:
         enabled: true
       resources:
         requests:
-          cpu: 50m
-          memory: 128Mi
+          cpu: 100m
+          memory: 256Mi
         limits:
-          cpu: 300m
-          memory: 512Mi
+          cpu: "1"
+          memory: 1Gi
     alertmanager:
       enabled: true
       config:
