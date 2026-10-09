@@ -1,7 +1,4 @@
 [tools]
-sops = "3.13.3"
-age = "latest"
-jq = "latest"
 kubectl = "latest"
 helm = "latest"
 k9s = "latest"
