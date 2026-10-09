@@ -1,6 +1,7 @@
 {
   "uid": "backend-postgres",
-  "title": "Backend & Postgres",
+  "title": "Backend → Postgres",
+  "description": "Postgres seen by backend-api: client-side query and connection metrics",
   "tags": [
     "case-study"
   ],

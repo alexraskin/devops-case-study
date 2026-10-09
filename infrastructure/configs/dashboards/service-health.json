@@ -1,6 +1,7 @@
 {
   "uid": "service-health",
   "title": "Service Health",
+  "description": "Backend API and ML Api Service Health",
   "tags": [
     "case-study"
   ],
