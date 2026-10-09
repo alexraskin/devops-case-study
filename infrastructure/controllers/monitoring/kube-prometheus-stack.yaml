@@ -88,6 +88,12 @@ spec:
         size: 5Gi
       serviceMonitor:
         enabled: true
+      additionalDataSources:
+        - name: Loki
+          type: loki
+          uid: loki
+          url: http://loki-gateway.monitoring.svc
+          access: proxy
       resources:
         requests:
           cpu: 100m
