@@ -1,0 +1,37 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: workload-alerts
+  namespace: monitoring
+spec:
+  groups:
+    - name: workloads
+      interval: 1m
+      rules:
+        - alert: ContainerMemoryNearLimit
+          expr: |
+            max by (namespace, pod, container) (
+              container_memory_working_set_bytes{namespace=~"backend-api|ml-api|postgres|load-generator", container!=""}
+            )
+              / on (namespace, pod, container)
+            max by (namespace, pod, container) (
+              kube_pod_container_resource_limits{resource="memory"}
+            )
+            > 0.9
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "{{ $labels.namespace }}/{{ $labels.container }}: memory near limit"
+            description: "{{ $labels.pod }} is using {{ $value | humanizePercentage }} of its memory limit; OOMKill is next."
+
+        - alert: PostgresDown
+          expr: |
+            kube_deployment_status_replicas_available{namespace="postgres", deployment="postgres"} < 1
+          for: 1m
+          labels:
+            severity: critical
+            service: postgres
+          annotations:
+            summary: "postgres: no available replica"
+            description: "postgres has had no ready pod for 1m; backend-api queries will all fail."

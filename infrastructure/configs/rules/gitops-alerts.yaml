@@ -1,0 +1,21 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: gitops-alerts
+  namespace: monitoring
+spec:
+  groups:
+    - name: flux
+      interval: 1m
+      rules:
+        - alert: FluxReconcileErrors
+          expr: |
+            sum by (controller) (
+              increase(controller_runtime_reconcile_errors_total{namespace="flux-system"}[10m])
+            ) > 0
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: "flux: {{ $labels.controller }} reconciliations failing"
+            description: "{{ $value | printf \"%.0f\" }} {{ $labels.controller }} reconcile errors in 10m. Run `flux get all -A --status-selector ready=false`."

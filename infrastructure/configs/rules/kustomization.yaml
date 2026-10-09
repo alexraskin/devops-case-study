@@ -3,3 +3,5 @@ kind: Kustomization
 resources:
   - backend-api.yaml
   - ml-api.yaml
+  - workload-alerts.yaml
+  - gitops-alerts.yaml
