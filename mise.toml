@@ -8,3 +8,15 @@ k9s = "latest"
 flux2 = "latest"
 kustomize = "latest"
 k3d = "latest"
+
+[tasks.start]
+description = "start the cluster"
+run = "k3d cluster start devops-cs"
+
+[tasks.stop]
+description = "stop the cluster"
+run = "k3d cluster stop devops-cs"
+
+[tasks.forward]
+description = "grafana port foward"
+run = "kubectl port-forward -n monitoring svc/kube-prometheus-stack-grafana 3000:80"
