@@ -61,3 +61,14 @@ spec:
           annotations:
             summary: "backend-api: database queries failing"
             description: "{{ $value | humanizePercentage }} of db queries are failing (threshold 10%)."
+
+        - alert: BackendApiTargetsMissing
+          expr: |
+            absent(up{job="backend-api"} == 1)
+          for: 2m
+          labels:
+            severity: critical
+            service: backend-api
+          annotations:
+            summary: "backend-api: no healthy scrape target"
+            description: "Prometheus has no successful backend-api scrape for 2m. Pods are gone, failing, or the Service no longer selects them"

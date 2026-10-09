@@ -59,3 +59,14 @@ spec:
           annotations:
             summary: "ml-api: /predict receives traffic but no predictions are made"
             description: "Requests are reaching /predict but ml_api_predictions_total has not increased in 10 minutes."
+
+        - alert: MlApiTargetsMissing
+          expr: |
+            absent(up{job="ml-api"} == 1)
+          for: 2m
+          labels:
+            severity: critical
+            service: ml-api
+          annotations:
+            summary: "ml-api: no healthy scrape target"
+            description: "Prometheus has no successful ml-api scrape for 2m. Pods are gone, failing, or the Service no longer selects them"
