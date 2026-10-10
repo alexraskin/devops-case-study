@@ -12,3 +12,6 @@ configMapGenerator:
   - name: dashboard-backend-postgres
     files:
       - backend-postgres.json
+  - name: dashboard-cluster-health
+    files:
+      - cluster-health.json
