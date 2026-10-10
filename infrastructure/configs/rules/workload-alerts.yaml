@@ -35,3 +35,19 @@ spec:
           annotations:
             summary: "postgres: no available replica"
             description: "postgres has had no ready pod for 1m; backend-api queries will all fail."
+
+        - alert: ServiceNoReadyEndpoints
+          expr: |
+            sum by (namespace) (
+              kube_deployment_status_replicas_available{namespace=~"backend-api|ml-api|postgres"}
+            ) > 0
+            unless on (namespace)
+            sum by (namespace) (
+              kube_endpointslice_endpoints{namespace=~"backend-api|ml-api|postgres", ready="true"}
+            ) > 0
+          for: 2m
+          labels:
+            severity: critical
+          annotations:
+            summary: "{{ $labels.namespace }}: Service routes to no pods"
+            description: "Pods are ready but the Service has no ready endpoints."
