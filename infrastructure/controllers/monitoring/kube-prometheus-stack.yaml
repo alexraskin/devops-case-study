@@ -77,9 +77,10 @@ spec:
 
     grafana:
       enabled: true
-      # Plain value so the stack comes up from a clean clone. In production
-      # this belongs in a sops-encrypted Secret decrypted by Flux
-      adminPassword: admin
+      admin:
+        existingSecret: grafana-admin
+        userKey: admin-user
+        passwordKey: admin-password
       persistence:
         enabled: true
         type: pvc
