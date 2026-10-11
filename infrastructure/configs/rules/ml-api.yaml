@@ -8,10 +8,11 @@ spec:
     - name: ml-api
       interval: 1m
       rules:
+        # Fires when more than 5% of non-probe requests return a 5xx status for 5m.
         - alert: MlApiErrorRatioHigh
           expr: |
-            sum(rate(ml_api_requests_total{status=~"5.."}[5m]))
-              / sum(rate(ml_api_requests_total[5m]))
+            sum(rate(ml_api_requests_total{endpoint!~"/health|/ready", status=~"5.."}[5m]))
+              / sum(rate(ml_api_requests_total{endpoint!~"/health|/ready"}[5m]))
             > 0.05
           for: 5m
           labels:
@@ -35,10 +36,11 @@ spec:
             summary: "ml-api: p95 latency above 1s"
             description: "p95 latency is {{ $value | humanizeDuration }}."
 
+        # Compares the last 5m request rate to the 5m before it; fires if it fell by more than half.
         - alert: MlApiTrafficDrop
           expr: |
-            sum(rate(ml_api_requests_total[5m]))
-              < 0.5 * sum(rate(ml_api_requests_total[5m] offset 5m))
+            sum(rate(ml_api_requests_total{endpoint!~"/health|/ready"}[5m]))
+              < 0.5 * sum(rate(ml_api_requests_total{endpoint!~"/health|/ready"}[5m] offset 5m))
           for: 2m
           labels:
             severity: critical
@@ -60,6 +62,8 @@ spec:
             summary: "ml-api: /predict receives traffic but no predictions are made"
             description: "Requests are reaching /predict but ml_api_predictions_total has not increased in 10 minutes."
 
+        # `up == 1` keeps only healthy targets; absent() fires when none are left,
+        # covering both failing scrapes (up=0) and targets that vanished entirely.
         - alert: MlApiTargetsMissing
           expr: |
             absent(up{job="ml-api"} == 1)

@@ -11,8 +11,8 @@ spec:
         # /process is already 100% 500s (missing `documents` table)
         - alert: BackendApiErrorRatioHigh
           expr: |
-            sum(rate(backend_api_requests_total{status=~"5.."}[5m]))
-              / sum(rate(backend_api_requests_total[5m]))
+            sum(rate(backend_api_requests_total{endpoint!~"/health|/ready", status=~"5.."}[5m]))
+              / sum(rate(backend_api_requests_total{endpoint!~"/health|/ready"}[5m]))
             > 0.05
           for: 5m
           labels:
@@ -39,8 +39,8 @@ spec:
         # Compared rather than divided so $value is the current req/s.
         - alert: BackendApiTrafficDrop
           expr: |
-            sum(rate(backend_api_requests_total[5m]))
-              < 0.5 * sum(rate(backend_api_requests_total[5m] offset 5m))
+            sum(rate(backend_api_requests_total{endpoint!~"/health|/ready"}[5m]))
+              < 0.5 * sum(rate(backend_api_requests_total{endpoint!~"/health|/ready"}[5m] offset 5m))
           for: 2m
           labels:
             severity: critical
@@ -49,6 +49,7 @@ spec:
             summary: "backend-api: request rate more than halved"
             description: "Now {{ $value | printf \"%.2f\" }} req/s, under half of 5 minutes ago. Check the load-generator, DNS or networking."
 
+        # Fires when more than 10% of the app's own Postgres queries (from its db metrics) fail for 5m.
         - alert: BackendApiDBErrors
           expr: |
             sum(rate(backend_api_db_queries_total{status="error"}[5m]))
@@ -62,6 +63,8 @@ spec:
             summary: "backend-api: database queries failing"
             description: "{{ $value | humanizePercentage }} of db queries are failing (threshold 10%)."
 
+        # `up == 1` keeps only healthy targets; absent() fires when none are left,
+        # covering both failing scrapes (up=0) and targets that vanished entirely.
         - alert: BackendApiTargetsMissing
           expr: |
             absent(up{job="backend-api"} == 1)

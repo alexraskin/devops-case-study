@@ -42,7 +42,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "sum(rate(ml_api_requests_total[5m]))"
+          "expr": "sum(rate(ml_api_requests_total{endpoint!~\"/health|/ready\"}[5m]))"
         }
       ],
       "options": {
@@ -92,7 +92,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "sum(rate(ml_api_requests_total{status=~\"5..\"}[5m])) / sum(rate(ml_api_requests_total[5m]))"
+          "expr": "sum(rate(ml_api_requests_total{endpoint!~\"/health|/ready\", status=~\"5..\"}[5m])) / sum(rate(ml_api_requests_total{endpoint!~\"/health|/ready\"}[5m]))"
         }
       ],
       "options": {
@@ -242,7 +242,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "sum by (status) (rate(ml_api_requests_total[5m]))",
+          "expr": "sum by (status) (rate(ml_api_requests_total{endpoint!~\"/health|/ready\"}[5m]))",
           "legendFormat": "{{status}}"
         }
       ],
@@ -334,7 +334,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "sum(rate(backend_api_requests_total[5m]))"
+          "expr": "sum(rate(backend_api_requests_total{endpoint!~\"/health|/ready\"}[5m]))"
         }
       ],
       "options": {
@@ -384,7 +384,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "sum(rate(backend_api_requests_total{status=~\"5..\"}[5m])) / sum(rate(backend_api_requests_total[5m]))"
+          "expr": "sum(rate(backend_api_requests_total{endpoint!~\"/health|/ready\", status=~\"5..\"}[5m])) / sum(rate(backend_api_requests_total{endpoint!~\"/health|/ready\"}[5m]))"
         }
       ],
       "options": {
@@ -534,7 +534,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "sum by (status) (rate(backend_api_requests_total[5m]))",
+          "expr": "sum by (status) (rate(backend_api_requests_total{endpoint!~\"/health|/ready\"}[5m]))",
           "legendFormat": "{{status}}"
         }
       ],
