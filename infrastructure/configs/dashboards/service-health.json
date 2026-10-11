@@ -296,7 +296,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "{namespace=\"ml-api\"}"
+          "expr": "{namespace=\"ml-api\"} != \"/health\" != \"/ready\""
         }
       ],
       "options": {
@@ -588,7 +588,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "{namespace=\"backend-api\"}"
+          "expr": "{namespace=\"backend-api\"} != \"/health\" != \"/ready\""
         }
       ],
       "options": {
