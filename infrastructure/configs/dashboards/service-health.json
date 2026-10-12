@@ -281,6 +281,43 @@
       "id": 7
     },
     {
+      "type": "timeseries",
+      "title": "Memory",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 13,
+        "w": 24,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "ml_api_memory_bytes{namespace=\"ml-api\"}",
+          "legendFormat": "{{pod}} reported"
+        },
+        {
+          "refId": "B",
+          "expr": "container_memory_working_set_bytes{namespace=\"ml-api\", container=\"ml-api\"}",
+          "legendFormat": "{{pod}} working set"
+        },
+        {
+          "refId": "C",
+          "expr": "max(kube_pod_container_resource_limits{namespace=\"ml-api\", container=\"ml-api\", resource=\"memory\"})",
+          "legendFormat": "limit"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes"
+        }
+      },
+      "id": 17
+    },
+    {
       "type": "logs",
       "title": "Logs",
       "datasource": {
@@ -289,7 +326,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 13,
+        "y": 21,
         "w": 24,
         "h": 10
       },
@@ -312,7 +349,7 @@
       "collapsed": false,
       "gridPos": {
         "x": 0,
-        "y": 24,
+        "y": 32,
         "w": 24,
         "h": 1
       },
@@ -327,7 +364,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 25,
+        "y": 33,
         "w": 6,
         "h": 4
       },
@@ -377,7 +414,7 @@
       },
       "gridPos": {
         "x": 6,
-        "y": 25,
+        "y": 33,
         "w": 6,
         "h": 4
       },
@@ -427,7 +464,7 @@
       },
       "gridPos": {
         "x": 12,
-        "y": 25,
+        "y": 33,
         "w": 6,
         "h": 4
       },
@@ -477,7 +514,7 @@
       },
       "gridPos": {
         "x": 18,
-        "y": 25,
+        "y": 33,
         "w": 6,
         "h": 4
       },
@@ -527,7 +564,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 29,
+        "y": 37,
         "w": 12,
         "h": 8
       },
@@ -554,7 +591,7 @@
       },
       "gridPos": {
         "x": 12,
-        "y": 29,
+        "y": 37,
         "w": 12,
         "h": 8
       },
@@ -581,7 +618,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 37,
+        "y": 45,
         "w": 24,
         "h": 10
       },

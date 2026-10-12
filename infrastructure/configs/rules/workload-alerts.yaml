@@ -13,7 +13,7 @@ spec:
             max by (namespace, pod, container) (
               container_memory_working_set_bytes{namespace=~"backend-api|ml-api|postgres|load-generator", container!=""}
             )
-              / on (namespace, pod, container)
+              /
             max by (namespace, pod, container) (
               kube_pod_container_resource_limits{resource="memory"}
             )
@@ -25,6 +25,7 @@ spec:
             summary: "{{ $labels.namespace }}/{{ $labels.container }}: memory near limit"
             description: "{{ $labels.pod }} is using {{ $value | humanizePercentage }} of its memory limit; OOMKill is next."
 
+        # Fires when the postgres Deployment has zero available (ready) replicas for 1m.
         - alert: PostgresDown
           expr: |
             kube_deployment_status_replicas_available{namespace="postgres", deployment="postgres"} < 1
@@ -36,6 +37,9 @@ spec:
             summary: "postgres: no available replica"
             description: "postgres has had no ready pod for 1m; backend-api queries will all fail."
 
+        # Left side of `unless`: namespaces whose Deployment has ready pods. `unless` drops any namespace that
+        # also has ready EndpointSlice endpoints, so what's left is "pods are fine but the Service
+        # isn't routing to them" (e.g. a selector/label mismatch).
         - alert: ServiceNoReadyEndpoints
           expr: |
             sum by (namespace) (
@@ -44,10 +48,32 @@ spec:
             unless on (namespace)
             sum by (namespace) (
               kube_endpointslice_endpoints{namespace=~"backend-api|ml-api|postgres", ready="true"}
-            ) > 0
+            )
           for: 2m
           labels:
             severity: critical
           annotations:
             summary: "{{ $labels.namespace }}: Service routes to no pods"
             description: "Pods are ready but the Service has no ready endpoints."
+
+        # Fires when a container has restarted more than 3 times in the last hour.
+        - alert: ContainerRestarting
+          expr: |
+            increase(kube_pod_container_status_restarts_total{namespace=~"backend-api|ml-api|postgres|load-generator"}[1h]) > 3
+          labels:
+            severity: warning
+          annotations:
+            summary: "{{ $labels.namespace }}/{{ $labels.container }}: restarting repeatedly"
+            description: "{{ $labels.pod }} restarted {{ $value | printf \"%.0f\" }} times in the last hour. Check `kubectl describe pod` for OOMKilled or a failing liveness probe."
+
+        # Fires when a Deployment wants at least one pod but has none ready.
+        - alert: DeploymentNoReadyPods
+          expr: |
+            kube_deployment_status_replicas_available{namespace=~"backend-api|ml-api"} == 0
+              and kube_deployment_spec_replicas > 0
+          for: 2m
+          labels:
+            severity: critical
+          annotations:
+            summary: "{{ $labels.namespace }}/{{ $labels.deployment }}: no ready pods"
+            description: "{{ $labels.deployment }} wants pods but none have been ready for 2m. Check readiness probes and `kubectl describe pod`."

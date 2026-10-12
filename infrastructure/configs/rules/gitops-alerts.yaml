@@ -8,6 +8,8 @@ spec:
     - name: flux
       interval: 1m
       rules:
+        # Fires per Flux controller (source, kustomize, helm...) that logged any reconcile
+        # errors in the last 10m, sustained for 10m: a manifest, chart or Git source is broken.
         - alert: FluxReconcileErrors
           expr: |
             sum by (controller) (

@@ -8,7 +8,6 @@ spec:
     - name: backend-api
       interval: 1m
       rules:
-        # /process is already 100% 500s (missing `documents` table)
         - alert: BackendApiErrorRatioHigh
           expr: |
             sum(rate(backend_api_requests_total{endpoint!~"/health|/ready", status=~"5.."}[5m]))
@@ -52,7 +51,7 @@ spec:
         # Fires when more than 10% of the app's own Postgres queries (from its db metrics) fail for 5m.
         - alert: BackendApiDBErrors
           expr: |
-            sum(rate(backend_api_db_queries_total{status="error"}[5m]))
+            sum(rate(backend_api_db_queries_total{status!="success"}[5m]))
               / sum(rate(backend_api_db_queries_total[5m]))
             > 0.10
           for: 5m
