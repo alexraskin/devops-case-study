@@ -318,6 +318,38 @@
       "id": 17
     },
     {
+      "type": "timeseries",
+      "title": "/predict requests vs predictions",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 21,
+        "w": 24,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(rate(ml_api_requests_total{endpoint=\"/predict\"}[10m]))",
+          "legendFormat": "/predict requests"
+        },
+        {
+          "refId": "B",
+          "expr": "sum(rate(ml_api_predictions_total[10m]))",
+          "legendFormat": "predictions"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps"
+        }
+      },
+      "id": 18
+    },
+    {
       "type": "logs",
       "title": "Logs",
       "datasource": {
@@ -326,7 +358,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 21,
+        "y": 29,
         "w": 24,
         "h": 10
       },
@@ -349,7 +381,7 @@
       "collapsed": false,
       "gridPos": {
         "x": 0,
-        "y": 32,
+        "y": 40,
         "w": 24,
         "h": 1
       },
@@ -364,7 +396,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 33,
+        "y": 41,
         "w": 6,
         "h": 4
       },
@@ -414,7 +446,7 @@
       },
       "gridPos": {
         "x": 6,
-        "y": 33,
+        "y": 41,
         "w": 6,
         "h": 4
       },
@@ -464,7 +496,7 @@
       },
       "gridPos": {
         "x": 12,
-        "y": 33,
+        "y": 41,
         "w": 6,
         "h": 4
       },
@@ -514,7 +546,7 @@
       },
       "gridPos": {
         "x": 18,
-        "y": 33,
+        "y": 41,
         "w": 6,
         "h": 4
       },
@@ -564,7 +596,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 37,
+        "y": 45,
         "w": 12,
         "h": 8
       },
@@ -591,7 +623,7 @@
       },
       "gridPos": {
         "x": 12,
-        "y": 37,
+        "y": 45,
         "w": 12,
         "h": 8
       },
@@ -618,7 +650,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 45,
+        "y": 53,
         "w": 24,
         "h": 10
       },
