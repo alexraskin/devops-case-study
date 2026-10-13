@@ -1,6 +1,6 @@
 # devops-case-study
 
-This is my solution to the DevOps case study: what I built, how to get into it, and why I made the choices I did.
+This is my solution to the DevOps case study: what I built, how to access it, and why I made the choices I did.
 
 [Architecture diagram](https://excalidraw.com/#json=sfibXJ9KpPPa0zT7C2xBn,jgO0p5DANrsakWFqvMdovQ)
 
@@ -22,26 +22,25 @@ For logs I picked Loki and Alloy over something heavier. The Loki chart assumes 
 
 ## Grafana
 
-The monitoring stack takes a few minutes to install on a fresh cluster. `flux get kustomizations --watch` shows when it's done. Then check that everything is up and port-forward Grafana:
-
 ```bash
 flux get all -A
 kubectl -n monitoring get pods
 mise run forward # grafana
 ```
 
-Then open [http://localhost:3000](http://localhost:3000) and log in as `admin`. The chart generates a random password on first install and keeps it in a Kubernetes secret, so it isn't in Git:
+Then open [http://localhost:3000](http://localhost:3000) and log in as `admin`.
+
+admin password from the kube secret:
 
 ```bash
-kubectl -n monitoring get secret kube-prometheus-stack-grafana \
-  -o jsonpath='{.data.admin-password}' | base64 --decode; echo
+kubectl -n monitoring get secret kube-prometheus-stack-grafana -o jsonpath='{.data.admin-password}' | base64 --decode; echo
 ```
 
 ### Dashboards
 
 There are three dashboards, stored in Git as ConfigMaps and picked up by Grafana automatically.
 
-**Service Health** is where I'd start when something is slow or erroring. It has a row each for the ML API and the backend API with request rate, errors, p95 latency, and pod health, plus that service's logs right underneath. The ML API row also shows memory against its limit.
+**Service Health** It has a row each for the ML API and the backend API with request rate, errors, p95 latency, and pod health, plus that service's logs right underneath. The ML API row also shows memory against its limit.
 
 **Backend → Postgres** looks at the database from the backend API's side: queries, errors, connections, and query status, next to the Postgres logs.
 
@@ -51,21 +50,21 @@ There are three dashboards, stored in Git as ConfigMaps and picked up by Grafana
 
 My rule of thumb was that an alert should mean a user is affected or something is about to break. Anything less urgent, like database connection usage, goes on a dashboard instead. I also excluded `/health` and `/ready` from the error and traffic calculations, since health checks make up most of the traffic and would drown out real problems.
 
-Both APIs get the same core alerts, based on rate, errors, and duration, since that's what users actually feel:
+Both APIs export the same kinds of metrics, so each alert below exists once per service:
 
-- More than 5% of requests return a 5xx over five minutes.
-- p95 latency stays above one second for five minutes.
-- Request volume drops by more than half compared with five minutes earlier, which can mean a dead caller or a network problem.
-- Prometheus has no healthy scrape target for the API for two minutes.
+- **Errors:** we have `backend_api_requests_total` and `ml_api_requests_total` split by their `status` label, and we alert when 5xx responses stay above 5% of traffic for five minutes.
+- **Latency:** we have the `backend_api_request_duration_seconds_bucket` and `ml_api_request_duration_seconds_bucket` histograms, and we alert when p95 sits over one second for five minutes.
+- **Traffic:** we have the same request counters, and we alert when the rate is under half of what it was five minutes before. That usually points at the caller, DNS, or the network rather than the API itself.
+- **Scraping:** we have Prometheus's own `up` series, labelled `job="backend-api"` or `job="ml-api"`, and we alert when either API goes two minutes without a healthy target.
 
-The HTTP alerts can't see everything, so I added a few for the workloads and Flux on top of the chart's defaults:
+The rest come from kube-state-metrics, cAdvisor, and Flux, on top of the chart's defaults:
 
-- A container is above 90% of its memory limit and close to being OOMKilled.
-- A container restarted more than three times in the last hour.
-- PostgreSQL has no available replicas.
-- An API Deployment has no ready pods.
-- A Service has no ready endpoints even though its pods are ready, which usually means a selector or port mismatch.
-- Flux keeps failing to reconcile.
+- **Memory:** we have `container_memory_working_set_bytes` divided by `kube_pod_container_resource_limits{resource="memory"}`, and we alert at 90% for five minutes, before the OOMKiller gets there.
+- **Restarts:** we have `kube_pod_container_status_restarts_total`, and we alert on more than three restarts in an hour.
+- **Postgres:** we have `kube_deployment_status_replicas_available{deployment="postgres"}`, and we alert after one minute with nothing available.
+- **API pods:** we have the same series next to `kube_deployment_spec_replicas`, and we alert when a Deployment wants pods but has had none ready for two minutes.
+- **Routing:** we have `kube_endpointslice_endpoints{ready="true"}`, and we alert when pods are ready but the Service has no endpoints, which is usually a selector or port mismatch.
+- **GitOps:** we have `controller_runtime_reconcile_errors_total` from `flux-system`, and we alert when a controller keeps erroring for ten minutes.
 
 ### Logs
 
