@@ -80,7 +80,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "sum(rate(backend_api_db_queries_total{status=\"error\"}[5m])) / sum(rate(backend_api_db_queries_total[5m]))"
+          "expr": "(sum(rate(backend_api_db_queries_total{status!=\"success\"}[5m])) or vector(0)) / sum(rate(backend_api_db_queries_total[5m]))"
         }
       ],
       "options": {

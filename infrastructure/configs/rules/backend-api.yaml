@@ -15,7 +15,7 @@ spec:
             > 0.05
           for: 5m
           labels:
-            severity: warning
+            severity: critical
             service: backend-api
           annotations:
             summary: "backend-api: high 5xx error ratio"
@@ -47,20 +47,6 @@ spec:
           annotations:
             summary: "backend-api: request rate more than halved"
             description: "Now {{ $value | printf \"%.2f\" }} req/s, under half of 5 minutes ago. Check the load-generator, DNS or networking."
-
-        # Fires when more than 10% of the app's own Postgres queries (from its db metrics) fail for 5m.
-        - alert: BackendApiDBErrors
-          expr: |
-            sum(rate(backend_api_db_queries_total{status!="success"}[5m]))
-              / sum(rate(backend_api_db_queries_total[5m]))
-            > 0.10
-          for: 5m
-          labels:
-            severity: critical
-            service: backend-api
-          annotations:
-            summary: "backend-api: database queries failing"
-            description: "{{ $value | humanizePercentage }} of db queries are failing (threshold 10%)."
 
         # `up == 1` keeps only healthy targets; absent() fires when none are left,
         # covering both failing scrapes (up=0) and targets that vanished entirely.

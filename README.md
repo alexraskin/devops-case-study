@@ -22,7 +22,7 @@ For logs I picked Loki and Alloy over something heavier. The Loki chart assumes 
 
 ## Grafana
 
-Once Flux has reconciled, check that everything is up and port-forward Grafana:
+The monitoring stack takes a few minutes to install on a fresh cluster. `flux get kustomizations --watch` shows when it's done. Then check that everything is up and port-forward Grafana:
 
 ```bash
 flux get all -A
@@ -30,10 +30,10 @@ kubectl -n monitoring get pods
 mise run forward # grafana
 ```
 
-Then open [http://localhost:3000](http://localhost:3000) and log in as `admin`. The password is in a Kubernetes secret:
+Then open [http://localhost:3000](http://localhost:3000) and log in as `admin`. The chart generates a random password on first install and keeps it in a Kubernetes secret, so it isn't in Git:
 
 ```bash
-kubectl -n monitoring get secret grafana-admin \
+kubectl -n monitoring get secret kube-prometheus-stack-grafana \
   -o jsonpath='{.data.admin-password}' | base64 --decode; echo
 ```
 
@@ -43,7 +43,7 @@ There are three dashboards, stored in Git as ConfigMaps and picked up by Grafana
 
 **Service Health** is where I'd start when something is slow or erroring. It has a row each for the ML API and the backend API with request rate, errors, p95 latency, and pod health, plus that service's logs right underneath. The ML API row also shows memory against its limit.
 
-**Backend & Postgres** looks at the database from the backend API's side: queries, errors, connections, and query status, next to the Postgres logs.
+**Backend → Postgres** looks at the database from the backend API's side: queries, errors, connections, and query status, next to the Postgres logs.
 
 **Cluster Health** covers the rest: node and pod status, restarts, resource usage, active alerts, and Flux errors.
 
@@ -57,8 +57,6 @@ Both APIs get the same core alerts, based on rate, errors, and duration, since t
 - p95 latency stays above one second for five minutes.
 - Request volume drops by more than half compared with five minutes earlier, which can mean a dead caller or a network problem.
 - Prometheus has no healthy scrape target for the API for two minutes.
-
-The backend API also alerts when more than 10% of database queries fail, and the ML API alerts when `/predict` keeps getting requests but no predictions are being recorded.
 
 The HTTP alerts can't see everything, so I added a few for the workloads and Flux on top of the chart's defaults:
 
