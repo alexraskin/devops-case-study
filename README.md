@@ -30,7 +30,7 @@ mise run forward # grafana
 
 Then open [http://localhost:3000](http://localhost:3000) and log in as `admin`.
 
-admin password from the kube secret:
+Get the admin password from the secret
 
 ```bash
 kubectl -n monitoring get secret kube-prometheus-stack-grafana -o jsonpath='{.data.admin-password}' | base64 --decode; echo
@@ -40,7 +40,7 @@ kubectl -n monitoring get secret kube-prometheus-stack-grafana -o jsonpath='{.da
 
 There are three dashboards, stored in Git as ConfigMaps and picked up by Grafana automatically.
 
-**Service Health** It has a row each for the ML API and the backend API with request rate, errors, p95 latency, and pod health, plus that service's logs right underneath. The ML API row also shows memory against its limit.
+**Service Health** has a row each for the ML API and the backend API with request rate, errors, p95 latency, and pod health, plus that service's logs right underneath. The ML API row also shows memory against its limit.
 
 **Backend → Postgres** looks at the database from the backend API's side: queries, errors, connections, and query status, next to the Postgres logs.
 
